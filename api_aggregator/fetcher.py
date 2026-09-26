@@ -10,7 +10,11 @@ import asyncio
 
 import aiohttp
 
+import time
+
 from api_aggregator.models import FetchResult, SourceConfig
+from api_aggregator.config import apply_response_mapping
+
 
 RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
 
@@ -46,7 +50,54 @@ async def fetch_source(
     Returns:
         FetchResult с результатом или ошибкой
     """
-    raise NotImplementedError("TODO: Реализуйте fetch_source")
+
+    last_error = None
+    status_code = None
+
+    start = time.monotonic() # запускаем таймер
+    for attempt in range(retries + 1):
+        try:
+            async with semaphore:
+                async with session.request(
+                    method=source.method,
+                    url=source.url,
+                    params=source.params,
+                    headers=source.headers,
+                    timeout=aiohttp.ClientTimeout(total=timeout),
+                ) as response:
+                    status_code = response.status
+                
+                    if 200 <= status_code < 300:
+                        raw_json = await response.json()
+                        data = apply_response_mapping(raw_response=raw_json, mapping=source.response_mapping)
+                        end = time.monotonic()
+                        duration = (end - start) * 1000
+                        return FetchResult(source_name=source.name, success=True, data=data, status_code=status_code, elapsed_ms=duration, error=last_error, retries_used=attempt)
+                    elif status_code in (RETRYABLE_STATUSES):
+                        last_error = f"HTTP {status_code}"
+                    else:
+                        end = time.monotonic()
+                        duration = (end - start) * 1000
+                        last_error = f"HTTP {status_code}"
+                        return FetchResult(source_name=source.name, success=False, data=None, status_code=status_code, elapsed_ms=duration, error=last_error, retries_used=attempt)
+
+            if attempt < retries:
+                await asyncio.sleep(2**attempt)
+                continue
+
+        except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+            last_error = str(e)
+            if attempt < retries:
+                await asyncio.sleep(2**attempt)
+                continue
+        except (Exception) as e:
+            end = time.monotonic()
+            duration = (end - start) * 1000
+            return FetchResult(source_name=source.name, success=False, data=None, status_code=status_code, elapsed_ms=duration, error=str(e), retries_used=attempt)
+
+    end = time.monotonic()
+    duration = (end - start) * 1000
+    return FetchResult(source_name=source.name, success=False, data=None, status_code=status_code, elapsed_ms=duration, error=last_error ,retries_used=retries)
 
 
 async def fetch_all(
@@ -72,4 +123,16 @@ async def fetch_all(
     Returns:
         Список FetchResult
     """
-    raise NotImplementedError("TODO: Реализуйте fetch_all")
+
+    async with aiohttp.ClientSession() as session:
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        tasks = [fetch_source(session=session, 
+                              source=source, 
+                              semaphore=semaphore, 
+                              timeout=timeout, 
+                              retries=retries) for source in sources]
+
+        result = await asyncio.gather(*tasks)
+
+    return result
