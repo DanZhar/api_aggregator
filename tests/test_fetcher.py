@@ -29,7 +29,7 @@ class TestFetchSource:
     async def test_successful_fetch(self, simple_source):
         with aioresponses() as mocked:
             mocked.get(
-                "https://api.example.com/data",
+                "https://api.example.com/data?key=value",
                 payload={"data": {"value": 42}},
                 status=200,
             )
@@ -49,7 +49,7 @@ class TestFetchSource:
     @pytest.mark.asyncio
     async def test_returns_fetch_result(self, simple_source):
         with aioresponses() as mocked:
-            mocked.get("https://api.example.com/data", payload={"data": {"value": 1}})
+            mocked.get("https://api.example.com/data?key=value", payload={"data": {"value": 1}})
             import aiohttp
 
             async with aiohttp.ClientSession() as session:
@@ -61,10 +61,10 @@ class TestFetchSource:
     @pytest.mark.asyncio
     async def test_failed_fetch_returns_error(self, simple_source):
         with aioresponses() as mocked:
-            mocked.get("https://api.example.com/data", status=500)
-            mocked.get("https://api.example.com/data", status=500)
-            mocked.get("https://api.example.com/data", status=500)
-            mocked.get("https://api.example.com/data", status=500)
+            mocked.get("https://api.example.com/data?key=value", status=500)
+            mocked.get("https://api.example.com/data?key=value", status=500)
+            mocked.get("https://api.example.com/data?key=value", status=500)
+            mocked.get("https://api.example.com/data?key=value", status=500)
             import aiohttp
 
             async with aiohttp.ClientSession() as session:
@@ -77,10 +77,10 @@ class TestFetchSource:
     @pytest.mark.asyncio
     async def test_timeout_handling(self, simple_source):
         with aioresponses() as mocked:
-            mocked.get("https://api.example.com/data", exception=asyncio.TimeoutError())
-            mocked.get("https://api.example.com/data", exception=asyncio.TimeoutError())
-            mocked.get("https://api.example.com/data", exception=asyncio.TimeoutError())
-            mocked.get("https://api.example.com/data", exception=asyncio.TimeoutError())
+            mocked.get("https://api.example.com/data?key=value", exception=asyncio.TimeoutError())
+            mocked.get("https://api.example.com/data?key=value", exception=asyncio.TimeoutError())
+            mocked.get("https://api.example.com/data?key=value", exception=asyncio.TimeoutError())
+            mocked.get("https://api.example.com/data?key=value", exception=asyncio.TimeoutError())
             import aiohttp
 
             async with aiohttp.ClientSession() as session:
@@ -92,9 +92,11 @@ class TestFetchSource:
     @pytest.mark.asyncio
     async def test_retries_used_counted(self, simple_source):
         with aioresponses() as mocked:
-            mocked.get("https://api.example.com/data", status=500)
-            mocked.get("https://api.example.com/data", status=500)
-            mocked.get("https://api.example.com/data", payload={"data": {"value": 1}}, status=200)
+            mocked.get("https://api.example.com/data?key=value", status=500)
+            mocked.get("https://api.example.com/data?key=value", status=500)
+            mocked.get(
+                "https://api.example.com/data?key=value", payload={"data": {"value": 1}}, status=200
+            )
             import aiohttp
 
             async with aiohttp.ClientSession() as session:
@@ -107,7 +109,7 @@ class TestFetchSource:
     @pytest.mark.asyncio
     async def test_elapsed_ms_positive(self, simple_source):
         with aioresponses() as mocked:
-            mocked.get("https://api.example.com/data", payload={"data": {"value": 1}})
+            mocked.get("https://api.example.com/data?key=value", payload={"data": {"value": 1}})
             import aiohttp
 
             async with aiohttp.ClientSession() as session:
@@ -145,7 +147,7 @@ class TestFetchAll:
     async def test_fetch_all_returns_list(self, sample_sources):
         with aioresponses() as mocked:
             mocked.get(
-                "https://api.example.com/weather",
+                "https://api.example.com/weather?lat=55.75&lon=37.61",
                 payload={"current": {"temp": 15, "wind_speed": 4}},
             )
             mocked.get(
@@ -161,7 +163,7 @@ class TestFetchAll:
     async def test_fetch_all_preserves_order(self, sample_sources):
         with aioresponses() as mocked:
             mocked.get(
-                "https://api.example.com/weather",
+                "https://api.example.com/weather?lat=55.75&lon=37.61",
                 payload={"current": {"temp": 10, "wind_speed": 2}},
             )
             mocked.get("https://api.example.com/catfact", payload={"fact": "Hi", "length": 2})
@@ -174,7 +176,7 @@ class TestFetchAll:
     async def test_fetch_all_partial_failure(self, sample_sources):
         with aioresponses() as mocked:
             mocked.get(
-                "https://api.example.com/weather",
+                "https://api.example.com/weather?lat=55.75&lon=37.61",
                 payload={"current": {"temp": 10, "wind_speed": 2}},
             )
             mocked.get("https://api.example.com/catfact", status=500)
@@ -193,7 +195,7 @@ class TestFetchAll:
     async def test_fetch_all_results_are_fetch_result(self, sample_sources):
         with aioresponses() as mocked:
             mocked.get(
-                "https://api.example.com/weather",
+                "https://api.example.com/weather?lat=55.75&lon=37.61",
                 payload={"current": {"temp": 10, "wind_speed": 2}},
             )
             mocked.get("https://api.example.com/catfact", payload={"fact": "X", "length": 1})
