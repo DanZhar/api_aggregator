@@ -9,7 +9,7 @@
 
 from fastapi import FastAPI
 
-app = FastAPI(title="API Aggregator", version="0.1.0")
+from api_aggregator.config import load_config
 
 
 def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int) -> FastAPI:
@@ -44,4 +44,13 @@ def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int
     Returns:
         Настроенный FastAPI app
     """
-    raise NotImplementedError("TODO: Реализуйте create_app")
+
+    app = FastAPI(title="API Aggregator", version="0.1.0")
+
+    sources = load_config(filepath=config_path).sources
+
+    @app.get("/")
+    def health() -> dict:
+        return {"name": app.title, "version": app.version, "sources": len(sources)}
+
+    return app
