@@ -7,9 +7,14 @@
     POST /refresh       — повторить запросы и обновить данные
 """
 
-from fastapi import FastAPI
+import asyncio
 
+from fastapi import FastAPI, HTTPException
+
+from api_aggregator.aggregator import aggregate
 from api_aggregator.config import load_config
+from api_aggregator.fetcher import fetch_all
+from api_aggregator.models import AggregatedReport, FetchResult
 
 
 def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int) -> FastAPI:
@@ -48,9 +53,32 @@ def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int
     app = FastAPI(title="API Aggregator", version="0.1.0")
 
     sources = load_config(filepath=config_path).sources
+    results = asyncio.run(
+        fetch_all(
+            sources=sources,
+            timeout=timeout,
+            max_concurrent=max_concurrent,
+            retries=retries,
+        )
+    )
+    report = aggregate(results=results)
+
+    app.state.report = report
 
     @app.get("/")
     def health() -> dict:
         return {"name": app.title, "version": app.version, "sources": len(sources)}
+
+    @app.get("/report")
+    def get_report() -> AggregatedReport:
+        return app.state.report
+
+    @app.get("/report/{name}")
+    def get_report_by_name(name: str) -> FetchResult:
+        for result in app.state.report.results:
+            if result.source_name == name:
+                return result
+
+        raise HTTPException(status_code=404, detail=f"Source '{name}' not found")
 
     return app
