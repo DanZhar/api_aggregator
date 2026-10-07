@@ -1,5 +1,7 @@
 """Агрегация результатов запросов."""
 
+from datetime import datetime
+
 from api_aggregator.models import AggregatedReport, FetchResult
 
 
@@ -20,4 +22,22 @@ def aggregate(results: list[FetchResult]) -> AggregatedReport:
     Returns:
         AggregatedReport
     """
-    raise NotImplementedError("TODO: Реализуйте aggregate")
+    total_sources = len(results)
+    successful = failed = total_time_ms = 0
+
+    for result in results:
+        if result.success:
+            successful += 1
+        else:
+            failed += 1
+
+        total_time_ms += result.elapsed_ms
+
+    return AggregatedReport(
+        timestamp=datetime.now(),
+        total_sources=total_sources,
+        successful=successful,
+        failed=failed,
+        total_time_ms=total_time_ms,
+        results=results,
+    )

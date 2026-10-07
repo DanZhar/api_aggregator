@@ -1,5 +1,9 @@
 """Загрузка и валидация конфигурации из JSON-файла."""
 
+import json
+import os
+from json import JSONDecodeError
+
 from api_aggregator.models import AppConfig
 
 
@@ -19,7 +23,19 @@ def load_config(filepath: str) -> AppConfig:
     Returns:
         AppConfig — валидированная конфигурация
     """
-    raise NotImplementedError("TODO: Реализуйте load_config")
+
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File {filepath} does not exist.")
+
+    try:
+        with open(filepath, encoding="utf-8") as f:
+            data = json.load(f)
+    except JSONDecodeError as e:
+        raise ValueError(f"Failed to parse json: {filepath} : {e}") from e
+    except OSError as e:
+        raise ValueError(f"Failed to open JSON: {filepath}: {e}") from e
+
+    return AppConfig(**data)
 
 
 def extract_by_path(data: dict | list, path: str):
@@ -44,7 +60,28 @@ def extract_by_path(data: dict | list, path: str):
     Returns:
         Извлечённое значение или None
     """
-    raise NotImplementedError("TODO: Реализуйте extract_by_path")
+
+    if path == "$":
+        return data
+
+    splitted_path = path.split(".")
+    res = data
+
+    for step in splitted_path:
+        if step.isdigit():
+            try:
+                res = res[int(step)]
+            except (IndexError, TypeError):
+                res = None
+                break
+        else:
+            try:
+                res = res[step]
+            except (KeyError, TypeError):
+                res = None
+                break
+
+    return res
 
 
 def apply_response_mapping(raw_response: dict | list, mapping: dict[str, str]) -> dict:
@@ -60,4 +97,9 @@ def apply_response_mapping(raw_response: dict | list, mapping: dict[str, str]) -
     Returns:
         dict с извлечёнными значениями
     """
-    raise NotImplementedError("TODO: Реализуйте apply_response_mapping")
+
+    res = {}
+    for report_key, path in mapping.items():
+        res[report_key] = extract_by_path(data=raw_response, path=path)
+
+    return res
