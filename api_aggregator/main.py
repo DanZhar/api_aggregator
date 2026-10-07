@@ -9,10 +9,13 @@ import argparse
 import asyncio
 import sys
 
+import uvicorn
+
 from api_aggregator.aggregator import aggregate
 from api_aggregator.config import load_config
 from api_aggregator.fetcher import fetch_all
 from api_aggregator.report import generate_json_report, generate_text_report, save_report
+from api_aggregator.server import create_app
 
 
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
@@ -94,7 +97,13 @@ def main() -> None:
 
     try:
         if args.serve:
-            ...
+            app = create_app(
+                config_path=args.config,
+                timeout=args.timeout,
+                max_concurrent=args.max_concurrent,
+                retries=args.retries
+            )
+            uvicorn.run(app=app, port=args.port)
         else:
             results = asyncio.run(
                 fetch_all(

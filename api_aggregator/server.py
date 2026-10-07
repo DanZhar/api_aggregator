@@ -49,7 +49,7 @@ def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int
     Returns:
         Настроенный FastAPI app
     """
-
+    print(type(timeout), type(max_concurrent), type(retries))
     app = FastAPI(title="API Aggregator", version="0.1.0")
 
     sources = load_config(filepath=config_path).sources
@@ -80,5 +80,18 @@ def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int
                 return result
 
         raise HTTPException(status_code=404, detail=f"Source '{name}' not found")
+
+    @app.post("/refresh")
+    async def refresh() -> AggregatedReport:
+        new_results = await fetch_all(
+                    sources=sources,
+                    timeout=timeout,
+                    max_concurrent=max_concurrent,
+                    retries=retries,
+                )
+        new_report = aggregate(results=new_results)
+        app.state.report = new_report
+
+        return new_report
 
     return app
