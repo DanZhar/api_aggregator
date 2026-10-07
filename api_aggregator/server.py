@@ -84,11 +84,11 @@ def create_app(config_path: str, timeout: int, max_concurrent: int, retries: int
     @app.post("/refresh")
     async def refresh() -> AggregatedReport:
         new_results = await fetch_all(
-                    sources=sources,
-                    timeout=timeout,
-                    max_concurrent=max_concurrent,
-                    retries=retries,
-                )
+            sources=sources,
+            timeout=timeout,
+            max_concurrent=max_concurrent,
+            retries=retries,
+        )
         new_report = aggregate(results=new_results)
         app.state.report = new_report
 

@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-10-07T08:57:50.250524",
+  "total_sources": 3,
+  "successful": 2,
+  "failed": 1,
+  "total_time_ms": 954.5942090044264,
+  "results": [
+    {
+      "source_name": "weather",
+      "success": false,
+      "data": null,
+      "status_code": null,
+      "elapsed_ms": 0.12524999328888953,
+      "error": "Invalid variable type: value should be str, int or float, got True of type <class 'bool'>",
+      "retries_used": 0
+    },
+    {
+      "source_name": "catfact",
+      "success": true,
+      "data": {
+        "fact": "A cat almost never meows at another cat, mostly just humans. Cats typically will spit, purr, and hiss at other cats.",
+        "length": 116
+      },
+      "status_code": 200,
+      "elapsed_ms": 475.0022500229534,
+      "error": null,
+      "retries_used": 0
+    },
+    {
+      "source_name": "universities",
+      "success": true,
+      "data": {
+        "results": []
+      },
+      "status_code": 200,
+      "elapsed_ms": 479.4667089881841,
+      "error": null,
+      "retries_used": 0
+    }
+  ]
+}

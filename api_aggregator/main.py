@@ -101,7 +101,7 @@ def main() -> None:
                 config_path=args.config,
                 timeout=args.timeout,
                 max_concurrent=args.max_concurrent,
-                retries=args.retries
+                retries=args.retries,
             )
             uvicorn.run(app=app, port=args.port)
         else:

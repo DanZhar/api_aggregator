@@ -32,17 +32,23 @@ def generate_text_report(report: AggregatedReport) -> str:
         str — форматированный текстовый отчёт
     """
     generated_report = ["=== API Aggregator Report ==="]
-    generated_report.append(f"Timestamp: {report.timestamp}")
-    generated_report.append(f"Sources: {report.total_sources} total, {report.successful} successful, {report.failed} failed")
+    generated_report.append(f"Timestamp: {report.timestamp.isoformat(timespec='seconds')}")
+    generated_report.append(
+        f"Sources: {report.total_sources} total, {report.successful} successful, {report.failed} failed"
+    )
     generated_report.append(f"Total time: {report.total_time_ms:.1f} ms")
 
     for result in report.results:
         if result.success:
-            generated_report.append(f"\n--- {result.source_name} (OK, {result.elapsed_ms:.0f} ms) ---")
+            generated_report.append(
+                f"\n--- {result.source_name} (OK, {result.elapsed_ms:.0f} ms) ---"
+            )
             for k, v in result.data.items():
                 generated_report.append(f"  {k}: {v}")
         else:
-            generated_report.append(f"\n--- {result.source_name} (FAILED, {result.elapsed_ms:.0f} ms, retries: {result.retries_used}) ---")
+            generated_report.append(
+                f"\n--- {result.source_name} (FAILED, {result.elapsed_ms:.0f} ms, retries: {result.retries_used}) ---"
+            )
             generated_report.append(f"  error: {result.error}")
 
     return "\n".join(generated_report)
@@ -72,4 +78,3 @@ def save_report(content: str, filepath: str) -> None:
     """
     with open(file=filepath, mode="w", encoding="utf-8") as file:
         file.write(content)
-    
